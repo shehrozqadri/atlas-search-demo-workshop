@@ -1,6 +1,6 @@
 {
   "watch": ["server.js", ".env"],
   "ext": "js,env",
-  "delay": 1000
+  "delay": 100
 }
 

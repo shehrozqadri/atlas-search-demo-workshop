@@ -54,12 +54,16 @@ async function connectToDatabase() {
  */
 async function exactMatchSearch(query, field, sort) {
     try {
-        const searchQuery = {[field]: query};
-        const sortQuery = {[sort]: -1};
+        // --- DEMO STEP 1: Exact Match ---
+        // This uses standard MongoDB syntax: { "title": "The Matrix" }
+        // It is case-sensitive and rigid.
+        const searchQuery = { [field]: query };
+
+        const sortQuery = { [sort]: -1 };
 
         let cursor;
 
-        if(sort && sort !== '') {
+        if (sort && sort !== '') {
             cursor = moviesCollection.find(searchQuery).sort(sortQuery);
         } else {
             cursor = moviesCollection.find(searchQuery);
@@ -83,19 +87,97 @@ async function exactMatchSearch(query, field, sort) {
  */
 async function fullTextSearch(query) {
     try {
-        // PLACEHOLDER: User will implement Atlas Search here
-        // Currently returns empty results by default
+        // --- DEMO STEPS FOR ATLAS SEARCH ---
+        // Uncomment the let cursor = ... block below to run the demo steps
 
         let cursor = moviesCollection.aggregate([
-            
-            // Search Query Labs: Enter aggregation stages code here
-            // ... Your code goes here ...
+            {
+                "$search": {
+                    "index": CONFIG.searchIndexName,
 
+                    "compound": {
+                        "must": [
+                            // --- DEMO STEP 2: Simple Full Text Search ---
+                            {
+                                "text": {
+                                    "path": ["title", "cast", "fullplot"],
+                                    "query": query
+
+                                    // --- DEMO STEP 3: Fuzzy ---
+                                    // Uncomment below to allow 1 character typo
+                                    // , "fuzzy": { "maxEdits": 1, "prefixLength": 2, "maxExpansions": 50 }
+
+                                    // --- DEMO STEP 4: Match Criteria ---
+                                    // Uncomment below to implement matchCriteria
+                                    , "matchCriteria": "all"
+                                }
+                            }
+                        ]
+                        // --- DEMO STEP 6: Range and Equals ---
+                        // Uncomment the 'filter' block below
+
+                        , "filter": [
+                            // --- DEMO: Range ---
+                            { "range": { "path": "year", "gt": 2000 } }
+                            // --- DEMO: Equals ---
+                            // Uncomment below
+                            , { "equals": { "path": "genres", "value": "Action" } }
+                        ]
+
+                        // --- DEMO STEP 5: Compound Search ---
+                        // Uncomment the 'should' block below
+
+                        , "should": [
+                            {
+                                "text": {
+                                    "path": "fullplot",
+                                    "query": query
+                                    // --- DEMO STEP 8: Boost Search Scores ---
+                                    // Uncomment each line below to boost movies matching this clause
+                                    , "score": { "boost": { "path": "imdb.rating", "undefined": 5 } }
+                                    // , "score": { "boost": { "value": 5 } }
+                                    // , "score": { "constant": { "value": 5 } }
+
+                                    // --- DEMO STEP 12: Synonyms ---
+                                    // Uncomment below to map words like 'car' to 'automobile'
+                                    // , "synonyms": "my_synonyms"
+                                }
+                            }
+                        ]
+                        // Uncomment below to implement minimumShouldMatch
+                        , "minimumShouldMatch": 1
+
+                    }
+
+                    // --- DEMO STEP 11: Highlighting (Search) ---
+                    // Uncomment below
+                    , "highlight": { "path": "fullplot" }
+
+                    // --- DEMO STEP 9: Modify Sort Order ---
+                    // Uncomment below
+                    // , "sort": { "year": -1 }
+                }
+            },
+            // --- DEMO STEP 7: Search Scores ---
+            // We can project the score using $meta.
+            {
+                $project: {
+                    title: 1, year: 1, cast: 1, fullplot: 1, poster: 1, genres: 1, imdb: 1, released: 1, runtime: 1, rated: 1
+                    // Uncomment below to add search score
+                    , score: { $meta: "searchScore" }
+
+                    // --- DEMO STEP 11: Highlighting (Project) ---
+                    // Uncomment below
+                    , highlights: { $meta: "searchHighlights" }
+                }
+            }
         ]);
 
         const results = await cursor.toArray();
         console.log(`ℹ Full text search: "${query}" - Found ${results.length} results`);
         return results;
+
+        return [];
     } catch (error) {
         console.error('✗ Full text search error:', error);
         throw error;
@@ -115,22 +197,25 @@ async function fullTextSearch(query) {
  */
 async function autocompleteTitle(query) {
     try {
-        // PLACEHOLDER: User will implement Atlas Search here
-        // Currently returns empty results by default
+        // --- DEMO STEP 10: Auto Complete ---
+        // Uncomment the code below to enable Autocomplete
 
-        // Autocomplete Lab: Uncomment the following code to set the value for cursor.
-        // let cursor = moviesCollection.aggregate([
-        //     { $search: {
-        //         "index": CONFIG.searchIndexName,
-        //         "autocomplete": { "query": query, "path": "title" }
-        //     } },
-        //     { $project: { title: 1 } },
-        //     { $limit: 8 }
-        // ]);
+        let cursor = moviesCollection.aggregate([
+            {
+                $search: {
+                    "index": CONFIG.searchIndexName,
+                    "autocomplete": { "query": query, "path": "title" }
+                }
+            },
+            { $project: { title: 1 } },
+            { $limit: 8 }
+        ]);
         const results = await cursor.toArray();
-        
+
         console.log(`ℹ Autocomplete search: "${query}" - Found ${results.length} results`);
         return results;
+        // Uncomment till here
+        return [];
     } catch (error) {
         console.error('✗ Autocomplete search error:', error);
         throw error;
@@ -150,61 +235,68 @@ async function autocompleteTitle(query) {
  */
 async function searchFacets(query) {
     try {
-        // PLACEHOLDER: User will implement Atlas Search faceting here
-        // Currently returns empty array by default
+        // --- DEMO STEP 13: Faceting ---
+        // Uncomment the code below to enable Facets using $searchMeta
 
-        // Facets Lab: Uncomment the following code to set the value for cursor.
-        // const cursor = moviesCollection.aggregate([
-        //     {
-        //         "$searchMeta": {
-        //             "index": CONFIG.searchIndexName,
-        //             "facet": {
-        //                 "operator": {
-        //                     // Facets Lab: Below this line, copy-paste the operator from fullTextSearch()
+        const cursor = moviesCollection.aggregate([
+            {
+                "$searchMeta": {
+                    "index": CONFIG.searchIndexName,
+                    "facet": {
+                        "operator": {
+                            "compound": {
+                                "must": [
+                                    { "text": { "path": ["title", "cast"], "query": query } },
+                                    { "range": { "path": "year", "gt": 2000 } }
+                                ]
+                            }
+                        },
+                        "facets": {
+                            "genres": {
+                                "type": "string",
+                                "path": "genres",
+                                "numBuckets": 3
+                            },
+                            "ratings": {
+                                "type": "number",
+                                "path": "imdb.rating",
+                                "boundaries": [0, 5, 8, 10]
+                            },
+                            "release_dates": {
+                                "type": "date",
+                                "path": "released",
+                                "boundaries": [
+                                    new Date("2000-01-01"),
+                                    new Date("2005-01-01"),
+                                    new Date("2015-01-01"),
+                                    new Date("2020-01-01")
+                                ],
+                                "default": "older"
+                            }
+                        }
+                    }
+                }
+            }
+        ]);
 
-        //                 },
-        //                 "facets": {
-        //                     "genres": {
-        //                         "type": "string",
-        //                         "path": "genres",
-        //                         "numBuckets": 3
-        //                     },
-        //                     "ratings": {
-        //                         "type": "number",
-        //                         "path": "imdb.rating",
-        //                         "boundaries": [0, 5, 8, 10]
-        //                     },
-        //                     "release_dates": {
-        //                         "type": "date",
-        //                         "path": "released",
-        //                         "boundaries": [
-        //                             new Date("2000-01-01"),
-        //                             new Date("2005-01-01"),
-        //                             new Date("2015-01-01"),
-        //                             new Date("2020-01-01")
-        //                         ],
-        //                         "default": "older"
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // ]);
-        
         let results;
-        try{
+        try {
             results = await cursor.toArray();
-        } catch(e){
+        } catch (e) {
             results = [];
         }
-        
+
         console.log(`ℹ Facet search: "${query}" - Found ${results.length} results`);
         return results;
+        // Uncomment till here
+
+        return [];
     } catch (error) {
         console.error('✗ Facet search error:', error);
         throw error;
     }
 }
+
 
 // ============================================
 // API ENDPOINTS
@@ -224,14 +316,14 @@ async function searchFacets(query) {
 app.post('/api/search/exact', async (req, res) => {
     try {
         const { query, field, sort } = req.body;
-        
+
         if (!query || !field) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Query and field are required',
                 example: { query: 'The Matrix', field: 'title', sort: 'year' }
             });
         }
-        
+
         const results = await exactMatchSearch(query, field, sort || '');
         res.json(results);
     } catch (error) {
@@ -247,18 +339,18 @@ app.post('/api/search/exact', async (req, res) => {
 app.post('/api/suggestions', async (req, res) => {
     try {
         const { query } = req.body;
-        
+
         if (!query || query.length < 2) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Query must be at least 2 characters'
             });
         }
-        
+
         const results = await autocompleteTitle(query);
-        
+
         // Extract just the titles
         const suggestions = results.map(doc => doc.title);
-        
+
         console.log(`✓ Autocomplete suggestions: "${query}" - Found ${suggestions.length} suggestions`);
         res.json(suggestions);
     } catch (error) {
@@ -279,14 +371,14 @@ app.post('/api/suggestions', async (req, res) => {
 app.post('/api/search/fulltext', async (req, res) => {
     try {
         const { query } = req.body;
-        
+
         if (!query) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Query is required',
                 example: { query: 'action adventure' }
             });
         }
-        
+
         const results = await fullTextSearch(query);
         res.json(results);
     } catch (error) {
@@ -307,14 +399,14 @@ app.post('/api/search/fulltext', async (req, res) => {
 app.post('/api/search/facets', async (req, res) => {
     try {
         const { query } = req.body;
-        
+
         if (!query) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Query is required',
                 example: { query: 'action' }
             });
         }
-        
+
         const results = await searchFacets(query);
         res.json(results);
     } catch (error) {
@@ -328,7 +420,7 @@ app.post('/api/search/facets', async (req, res) => {
  * Health check endpoint
  */
 app.get('/api/health', (req, res) => {
-    res.json({ 
+    res.json({
         status: 'Server is running',
         timestamp: new Date(),
         config: {
