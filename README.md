@@ -1,6 +1,6 @@
 # MongoDB Movie Database (MMDB) - Atlas Search Labs
 
-A hands-on lab environment for **MCP510 - MongoDB Atlas Search** course. This modern web application demonstrates how to build powerful search capabilities using MongoDB Atlas Search with the sample_mflix database.
+A hands-on lab environment for **MongoDB Atlas Search** course. This modern web application demonstrates how to build powerful search capabilities using MongoDB Atlas Search with the sample_mflix database.
 
 ## About the Lab
 
