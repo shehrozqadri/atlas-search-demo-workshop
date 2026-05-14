@@ -105,53 +105,53 @@ async function fullTextSearch(query) {
 
                                     // --- DEMO STEP 3: Fuzzy ---
                                     // Uncomment below to allow 1 character typo
-                                    // , "fuzzy": { "maxEdits": 1, "prefixLength": 2, "maxExpansions": 50 }
+                                    // , "fuzzy": { "maxEdits": 2, "prefixLength": 0, "maxExpansions": 50 }
 
                                     // --- DEMO STEP 4: Match Criteria ---
                                     // Uncomment below to implement matchCriteria
-                                    , "matchCriteria": "all"
+                                    // , "matchCriteria": "all"
                                 }
                             }
                         ]
-                        // --- DEMO STEP 6: Range and Equals ---
+                        // --- DEMO STEP 5: Range and Equals ---
                         // Uncomment the 'filter' block below
 
-                        , "filter": [
-                            // --- DEMO: Range ---
-                            { "range": { "path": "year", "gt": 2000 } }
-                            // --- DEMO: Equals ---
-                            // Uncomment below
-                            , { "equals": { "path": "genres", "value": "Action" } }
-                        ]
+                        // , "filter": [
+                        //     // --- DEMO: Range ---
+                        //     { "range": { "path": "year", "gt": 2000 } }
+                        //     // --- DEMO: Equals ---
+                        //     // Uncomment below
+                        //     , { "equals": { "path": "genres", "value": "Action" } }
+                        // ]
 
-                        // --- DEMO STEP 5: Compound Search ---
+                        // --- DEMO STEP 6: Compound Search ---
                         // Uncomment the 'should' block below
 
-                        , "should": [
-                            {
-                                "text": {
-                                    "path": "fullplot",
-                                    "query": query
-                                    // --- DEMO STEP 8: Boost Search Scores ---
-                                    // Uncomment each line below to boost movies matching this clause
-                                    , "score": { "boost": { "path": "imdb.rating", "undefined": 5 } }
-                                    // , "score": { "boost": { "value": 5 } }
-                                    // , "score": { "constant": { "value": 5 } }
+                        // , "should": [
+                        //     {
+                        //         "text": {
+                        //             "path": "fullplot",
+                        //             "query": query
+                        //             // --- DEMO STEP 8: Boost Search Scores ---
+                        //             // Uncomment each line below to boost movies matching this clause
+                        //            // , "score": { "boost": { "path": "imdb.rating", "undefined": 5 } }
+                        //             // , "score": { "boost": { "value": 5 } }
+                        //             // , "score": { "constant": { "value": 5 } }
 
-                                    // --- DEMO STEP 12: Synonyms ---
-                                    // Uncomment below to map words like 'car' to 'automobile'
-                                    // , "synonyms": "my_synonyms"
-                                }
-                            }
-                        ]
+                        //             // --- DEMO STEP 12: Synonyms ---
+                        //             // Uncomment below to map words like 'car' to 'automobile'
+                        //             , "synonyms": "my_synonyms"
+                        //         }
+                        //     }
+                        // ]
                         // Uncomment below to implement minimumShouldMatch
-                        , "minimumShouldMatch": 1
+                        // , "minimumShouldMatch": 1
 
                     }
 
                     // --- DEMO STEP 11: Highlighting (Search) ---
                     // Uncomment below
-                    , "highlight": { "path": "fullplot" }
+                    // , "highlight": { "path": "fullplot" }
 
                     // --- DEMO STEP 9: Modify Sort Order ---
                     // Uncomment below
@@ -164,11 +164,11 @@ async function fullTextSearch(query) {
                 $project: {
                     title: 1, year: 1, cast: 1, fullplot: 1, poster: 1, genres: 1, imdb: 1, released: 1, runtime: 1, rated: 1
                     // Uncomment below to add search score
-                    , score: { $meta: "searchScore" }
+                    // , score: { $meta: "searchScore" }
 
                     // --- DEMO STEP 11: Highlighting (Project) ---
                     // Uncomment below
-                    , highlights: { $meta: "searchHighlights" }
+                    // , highlights: { $meta: "searchHighlights" }
                 }
             }
         ]);
@@ -197,23 +197,23 @@ async function fullTextSearch(query) {
  */
 async function autocompleteTitle(query) {
     try {
-        // --- DEMO STEP 10: Auto Complete ---
+       // --- DEMO STEP 10: Auto Complete ---
         // Uncomment the code below to enable Autocomplete
 
-        let cursor = moviesCollection.aggregate([
-            {
-                $search: {
-                    "index": CONFIG.searchIndexName,
-                    "autocomplete": { "query": query, "path": "title" }
-                }
-            },
-            { $project: { title: 1 } },
-            { $limit: 8 }
-        ]);
-        const results = await cursor.toArray();
+        // let cursor = moviesCollection.aggregate([
+        //     {
+        //         $search: {
+        //             "index": CONFIG.searchIndexName,
+        //             "autocomplete": { "query": query, "path": "title" }
+        //         }
+        //     },
+        //     { $project: { title: 1 } },
+        //     { $limit: 8 }
+        // ]);
+        // const results = await cursor.toArray();
 
-        console.log(`ℹ Autocomplete search: "${query}" - Found ${results.length} results`);
-        return results;
+        // console.log(`ℹ Autocomplete search: "${query}" - Found ${results.length} results`);
+        // return results;
         // Uncomment till here
         return [];
     } catch (error) {
@@ -238,46 +238,46 @@ async function searchFacets(query) {
         // --- DEMO STEP 13: Faceting ---
         // Uncomment the code below to enable Facets using $searchMeta
 
-        const cursor = moviesCollection.aggregate([
-            {
-                "$searchMeta": {
-                    "index": CONFIG.searchIndexName,
-                    "facet": {
-                        "operator": {
-                            "compound": {
-                                "must": [
-                                    { "text": { "path": ["title", "cast"], "query": query } },
-                                    { "range": { "path": "year", "gt": 2000 } }
-                                ]
-                            }
-                        },
-                        "facets": {
-                            "genres": {
-                                "type": "string",
-                                "path": "genres",
-                                "numBuckets": 3
-                            },
-                            "ratings": {
-                                "type": "number",
-                                "path": "imdb.rating",
-                                "boundaries": [0, 5, 8, 10]
-                            },
-                            "release_dates": {
-                                "type": "date",
-                                "path": "released",
-                                "boundaries": [
-                                    new Date("2000-01-01"),
-                                    new Date("2005-01-01"),
-                                    new Date("2015-01-01"),
-                                    new Date("2020-01-01")
-                                ],
-                                "default": "older"
-                            }
-                        }
-                    }
-                }
-            }
-        ]);
+        // const cursor = moviesCollection.aggregate([
+        //     {
+        //         "$searchMeta": {
+        //             "index": CONFIG.searchIndexName,
+        //             "facet": {
+        //                 "operator": {
+        //                     "compound": {
+        //                         "must": [
+        //                             { "text": { "path": ["title", "cast"], "query": query } },
+        //                             { "range": { "path": "year", "gt": 2000 } }
+        //                         ]
+        //                     }
+        //                 },
+        //                 "facets": {
+        //                     "genres": {
+        //                         "type": "string",
+        //                         "path": "genres",
+        //                         "numBuckets": 3
+        //                     },
+        //                     "ratings": {
+        //                         "type": "number",
+        //                         "path": "imdb.rating",
+        //                         "boundaries": [0, 5, 8, 10]
+        //                     },
+        //                     "release_dates": {
+        //                         "type": "date",
+        //                         "path": "released",
+        //                         "boundaries": [
+        //                             new Date("2000-01-01"),
+        //                             new Date("2005-01-01"),
+        //                             new Date("2015-01-01"),
+        //                             new Date("2020-01-01")
+        //                         ],
+        //                         "default": "older"
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // ]);
 
         let results;
         try {
