@@ -87,97 +87,102 @@ async function exactMatchSearch(query, field, sort) {
  */
 async function fullTextSearch(query) {
     try {
-        // --- DEMO STEPS FOR ATLAS SEARCH ---
-        // Uncomment the let cursor = ... block below to run the demo steps
+       //  --- DEMO STEPS FOR ATLAS SEARCH ---
+        // Uncomment the cursor = ... block below to run the demo steps
 
-        let cursor = moviesCollection.aggregate([
-            {
-                "$search": {
-                    "index": CONFIG.searchIndexName,
+    // let cursor;
+    // cursor = moviesCollection.aggregate([
+    //         {
+    //             "$search": {
+    //                 "index": CONFIG.searchIndexName,
 
-                    "compound": {
-                        "must": [
-                            // --- DEMO STEP 2: Simple Full Text Search ---
-                            {
-                                "text": {
-                                    "path": ["title", "cast", "fullplot"],
-                                    "query": query
+    //                 "compound": {
+    //                     "must": [
+    //                         // --- DEMO STEP 2: Simple Full Text Search ---
+    //                         {
+    //                             "text": {
+    //                                 "path": ["title", "cast", "fullplot"],
+    //                                 "query": query
 
-                                    // --- DEMO STEP 3: Fuzzy ---
-                                    // Uncomment below to allow 1 character typo
-                                   // , "fuzzy": { "maxEdits": 2, "prefixLength": 0, "maxExpansions": 50 }
+    //                                 // --- DEMO STEP 3: Fuzzy ---
+    //                                 // Uncomment below to allow 1 character typo
+    //                                 // , "fuzzy": { "maxEdits": 2, "prefixLength": 0, "maxExpansions": 50 }
 
-                                    // --- DEMO STEP 4: Match Criteria ---
-                                    // Uncomment below to implement matchCriteria
-                                    // , "matchCriteria": "any"
-                                }
-                            }
-                        ]
-                        // --- DEMO STEP 5: Range and Equals ---
-                        // Uncomment the 'filter' block below
+    //                                 // --- DEMO STEP 4: Match Criteria ---
+    //                                 // Uncomment below to implement matchCriteria
+    //                                 // , "matchCriteria": "all"
+    //                             }
+    //                         }
+    //                     ]
+    //                     // --- DEMO STEP 5: Range and Equals ---
+    //                     // Uncomment the 'filter' block below
 
-                        // , "filter": [
-                        //     // --- DEMO: Range ---
-                        //     { "range": { "path": "year", "gt": 2000 } }
-                        //     // --- DEMO: Equals ---
-                        //     // Uncomment below
-                        //     , { "equals": { "path": "genres", "value": "Action" } }
-                        // ]
+    //                     // , "filter": [
+    //                     //     // --- DEMO: Range ---
+    //                     //     { "range": { "path": "year", "gt": 2000 } }
+    //                     //     // --- DEMO: Equals ---
+    //                     //     // Uncomment below
+    //                     //     , { "equals": { "path": "genres", "value": "Action" } }
+    //                     // ]
 
-                        // --- DEMO STEP 6: Compound Search ---
-                        // Uncomment the 'should' block below
+    //                     // --- DEMO STEP 6: Compound Search ---
+    //                     // Uncomment the 'should' block below
 
-                        , "should": [
-                            {
-                                "text": {
-                                    "path": "fullplot",
-                                    "query": query
-                                    // --- DEMO STEP 8: Boost Search Scores ---
-                                    // Uncomment each line below to boost movies matching this clause
-                                   // , "score": { "boost": { "path": "imdb.rating", "undefined": 5 } }
-                                    // , "score": { "boost": { "value": 5 } }
-                                    // , "score": { "constant": { "value": 5 } }
+    //                     // , "should": [
+    //                     //     {
+    //                     //         "text": {
+    //                     //             "path": "fullplot",
+    //                     //             "query": query
+    //                     //             // --- DEMO STEP 8: Boost Search Scores ---
+    //                     //             // Uncomment each line below to boost movies matching this clause
+    //                     //             // , "score": { "boost": { "path": "imdb.rating", "undefined": 5 } }
+    //                     //             // , "score": { "boost": { "value": 5 } }
+    //                     //             // , "score": { "constant": { "value": 5 } }
 
-                                    // --- DEMO STEP 12: Synonyms ---
-                                    // Uncomment below to map words like 'car' to 'automobile'
-                                    , "synonyms": "my_synonyms"
-                                }
-                            }
-                        ]
-                        // Uncomment below to implement minimumShouldMatch
-                        , "minimumShouldMatch": 1
+    //                     //             // --- DEMO STEP 12: Synonyms ---
+    //                     //             // Uncomment below to map words like 'car' to 'automobile'
+    //                     //             //, "synonyms": "my_synonyms"
+    //                     //         }
+    //                     //     }
+    //                     // ]
+    //                     // Uncomment below to implement minimumShouldMatch
+    //                     // , "minimumShouldMatch": 1
 
-                    }
+    //                 }
 
-                    // --- DEMO STEP 11: Highlighting (Search) ---
-                    // Uncomment below
-                    , "highlight": { "path": "fullplot" }
+    //                 // --- DEMO STEP 11: Highlighting (Search) ---
+    //                 // Uncomment below
+    //                  // , "highlight": { "path": "fullplot" }
 
-                    // --- DEMO STEP 9: Modify Sort Order ---
-                    // Uncomment below
-                   // , "sort": { "year": -1 }
-                }
-            },
-            // --- DEMO STEP 7: Search Scores ---
-            // We can project the score using $meta.
-            {
-                $project: {
-                    title: 1, year: 1, cast: 1, fullplot: 1, poster: 1, genres: 1, imdb: 1, released: 1, runtime: 1, rated: 1
-                    // Uncomment below to add search score
-                    , score: { $meta: "searchScore" }
+    //                 // --- DEMO STEP 9: Modify Sort Order ---
+    //                 // Uncomment below
+    //                // , "sort": { "year": -1 }
+    //             }
+    //         },
+    //         // --- DEMO STEP 7: Search Scores ---
+    //         // We can project the score using $meta.
+    //         {
+    //             $project: {
+    //                 title: 1, year: 1, cast: 1, fullplot: 1, poster: 1, genres: 1, imdb: 1, released: 1, runtime: 1, rated: 1
+    //                 // Uncomment below to add search score
+    //                 // , score: { $meta: "searchScore" }
 
-                    // --- DEMO STEP 11: Highlighting (Project) ---
-                    // Uncomment below
-                    , highlights: { $meta: "searchHighlights" }
-                }
-            }
-        ]);
+    //                 // --- DEMO STEP 11: Highlighting (Project) ---
+    //                 // Uncomment below
+    //                 // , highlights: { $meta: "searchHighlights" }
+    //             }
+    //         }
+    //     ]);
+    // uncomment till here
+
+         if (!cursor) 
+    {
+            return [];
+        }
 
         const results = await cursor.toArray();
         console.log(`ℹ Full text search: "${query}" - Found ${results.length} results`);
         return results;
-
-        return [];
     } catch (error) {
         console.error('✗ Full text search error:', error);
         throw error;
@@ -200,20 +205,21 @@ async function autocompleteTitle(query) {
        // --- DEMO STEP 10: Auto Complete ---
         // Uncomment the code below to enable Autocomplete
 
-        let cursor = moviesCollection.aggregate([
-            {
-                $search: {
-                    "index": CONFIG.searchIndexName,
-                    "autocomplete": { "query": query, "path": "title" }
-                }
-            },
-            { $project: { title: 1 } },
-            { $limit: 8 }
-        ]);
-        const results = await cursor.toArray();
+        // let cursor = moviesCollection.aggregate([
+        //     {
+        //         $search: {
+        //             "index": CONFIG.searchIndexName,
+        //             "autocomplete": { "query": query, "path": "title" }
+        //             //, "fuzzy": {}
+        //         }
+        //     },
+        //     { $project: { title: 1 } },
+        //     { $limit: 8 }
+        // ]);
+        // const results = await cursor.toArray();
 
-        console.log(`ℹ Autocomplete search: "${query}" - Found ${results.length} results`);
-        return results;
+        // console.log(`ℹ Autocomplete search: "${query}" - Found ${results.length} results`);
+        // return results;
         // Uncomment till here
         return [];
     } catch (error) {
@@ -238,56 +244,56 @@ async function searchFacets(query) {
         // --- DEMO STEP 13: Faceting ---
         // Uncomment the code below to enable Facets using $searchMeta
 
-        const cursor = moviesCollection.aggregate([
-            {
-                "$searchMeta": {
-                    "index": CONFIG.searchIndexName,
-                    "facet": {
-                        "operator": {
-                            "compound": {
-                                "must": [
-                                    { "text": { "path": ["title", "cast"], "query": query } },
-                                    { "range": { "path": "year", "gt": 2000 } }
-                                ]
-                            }
-                        },
-                        "facets": {
-                            "genres": {
-                                "type": "string",
-                                "path": "genres",
-                                "numBuckets": 3
-                            },
-                            "ratings": {
-                                "type": "number",
-                                "path": "imdb.rating",
-                                "boundaries": [0, 5, 8, 10]
-                            },
-                            "release_dates": {
-                                "type": "date",
-                                "path": "released",
-                                "boundaries": [
-                                    new Date("2000-01-01"),
-                                    new Date("2005-01-01"),
-                                    new Date("2015-01-01"),
-                                    new Date("2020-01-01")
-                                ],
-                                "default": "older"
-                            }
-                        }
-                    }
-                }
-            }
-        ]);
+        // const cursor = moviesCollection.aggregate([
+        //     {
+        //         "$searchMeta": {
+        //             "index": CONFIG.searchIndexName,
+        //             "facet": {
+        //                 "operator": {
+        //                     "compound": {
+        //                         "must": [
+        //                             { "text": { "path": ["title", "cast"], "query": query } },
+        //                             { "range": { "path": "year", "gt": 2000 } }
+        //                         ]
+        //                     }
+        //                 },
+        //                 "facets": {
+        //                     "genres": {
+        //                         "type": "string",
+        //                         "path": "genres",
+        //                         "numBuckets": 5
+        //                     },
+        //                     "ratings": {
+        //                         "type": "number",
+        //                         "path": "imdb.rating",
+        //                         "boundaries": [0, 5, 8, 10]
+        //                     },
+        //                     "release_dates": {
+        //                         "type": "date",
+        //                         "path": "released",
+        //                         "boundaries": [
+        //                             new Date("2000-01-01"),
+        //                             new Date("2005-01-01"),
+        //                             new Date("2015-01-01"),
+        //                             new Date("2020-01-01")
+        //                         ],
+        //                         "default": "older"
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // ]);
 
-        let results;
-        try {
-            results = await cursor.toArray();
-        } catch (e) {
-            results = [];
-        }
+        // let results;
+        // try {
+        //     results = await cursor.toArray();
+        // } catch (e) {
+        //     results = [];
+        // }
 
-        console.log(`ℹ Facet search: "${query}" - Found ${results.length} results`);
-        return results;
+        // console.log(`ℹ Facet search: "${query}" - Found ${results.length} results`);
+        // return results;
         // Uncomment till here
 
         return [];
