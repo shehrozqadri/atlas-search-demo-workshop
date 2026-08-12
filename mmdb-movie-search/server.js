@@ -90,7 +90,7 @@ async function fullTextSearch(query) {
        //  --- DEMO STEPS FOR ATLAS SEARCH ---
         // Uncomment the cursor = ... block below to run the demo steps
 
-    // let cursor;
+    let cursor;
     // cursor = moviesCollection.aggregate([
     //         {
     //             "$search": {
@@ -141,18 +141,18 @@ async function fullTextSearch(query) {
 
     //                     //             // --- DEMO STEP 12: Synonyms ---
     //                     //             // Uncomment below to map words like 'car' to 'automobile'
-    //                     //             //, "synonyms": "my_synonyms"
+    //                     //             , "synonyms": "my_synonyms"
     //                     //         }
     //                     //     }
     //                     // ]
     //                     // Uncomment below to implement minimumShouldMatch
-    //                     // , "minimumShouldMatch": 1
+    //                     //, "minimumShouldMatch": 1
 
     //                 }
 
     //                 // --- DEMO STEP 11: Highlighting (Search) ---
     //                 // Uncomment below
-    //                  // , "highlight": { "path": "fullplot" }
+    //                 // , "highlight": { "path": "fullplot" }
 
     //                 // --- DEMO STEP 9: Modify Sort Order ---
     //                 // Uncomment below
