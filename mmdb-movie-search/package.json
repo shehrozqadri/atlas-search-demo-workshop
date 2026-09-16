@@ -4,8 +4,8 @@
   "description": "MongoDB Movie Database - Search movies with MongoDB Atlas",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon -L server.js"
+    "start": "set -a && . ./.env && set +a && node server.js",
+    "dev": "set -a && . ./.env && set +a && nodemon -L server.js"
   },
   "keywords": [
     "mongodb",

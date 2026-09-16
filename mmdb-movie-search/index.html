@@ -37,11 +37,11 @@
             <div class="search-options">
                 <div class="radio-group">
                     <label>
-                        <input type="radio" name="searchType" value="fulltext" checked>
+                        <input type="radio" name="searchType" value="fulltext">
                         Full Text Search
                     </label>
                     <label>
-                        <input type="radio" name="searchType" value="exact">
+                        <input type="radio" name="searchType" value="exact" checked>
                         Exact Match
                     </label>
                 </div>
@@ -149,6 +149,10 @@
                 conditionalFields.style.display = e.target.value === 'exact' ? 'flex' : 'none';
             });
         });
+
+        // Initialize conditional fields based on default selected mode
+        const selectedSearchType = document.querySelector('input[name="searchType"]:checked');
+        conditionalFields.style.display = selectedSearchType && selectedSearchType.value === 'exact' ? 'flex' : 'none';
 
         // Autocomplete functionality (requires suggestionsList element to be uncommented in HTML)
         if(suggestionsList != null && suggestionsList != undefined){
