@@ -2,7 +2,7 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 const app = express();
 app.use(cors());
@@ -87,100 +87,62 @@ async function exactMatchSearch(query, field, sort) {
  */
 async function fullTextSearch(query) {
     try {
-       //  --- DEMO STEPS FOR ATLAS SEARCH ---
-        // Uncomment the cursor = ... block below to run the demo steps
+        let results;
 
-    let cursor;
-    // cursor = moviesCollection.aggregate([
-    //         {
-    //             "$search": {
-    //                 "index": CONFIG.searchIndexName,
+        try {
+            const cursor = moviesCollection.aggregate([
+                {
+                    $search: {
+                        index: CONFIG.searchIndexName,
+                        text: {
+                            path: ['title', 'cast', 'fullplot'],
+                            query,
+                            fuzzy: { maxEdits: 1 }
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        title: 1,
+                        year: 1,
+                        cast: 1,
+                        fullplot: 1,
+                        poster: 1,
+                        genres: 1,
+                        imdb: 1,
+                        released: 1,
+                        runtime: 1,
+                        rated: 1,
+                        score: { $meta: 'searchScore' }
+                    }
+                },
+                { $limit: 50 }
+            ]);
 
-    //                 "compound": {
-    //                     "must": [
-    //                         // --- DEMO STEP 2: Simple Full Text Search ---
-    //                         {
-    //                             "text": {
-    //                                 "path": ["title", "cast", "fullplot"],
-    //                                 "query": query
-
-    //                                 // --- DEMO STEP 3: Fuzzy ---
-    //                                 // Uncomment below to allow 1 character typo
-    //                                 // , "fuzzy": { "maxEdits": 2, "prefixLength": 0, "maxExpansions": 50 }
-
-    //                                 // --- DEMO STEP 4: Match Criteria ---
-    //                                 // Uncomment below to implement matchCriteria
-    //                                 // , "matchCriteria": "all"
-    //                             }
-    //                         }
-    //                     ]
-    //                     // --- DEMO STEP 5: Range and Equals ---
-    //                     // Uncomment the 'filter' block below
-
-    //                     // , "filter": [
-    //                     //     // --- DEMO: Range ---
-    //                     //     { "range": { "path": "year", "gt": 2000 } }
-    //                     //     // --- DEMO: Equals ---
-    //                     //     // Uncomment below
-    //                     //     , { "equals": { "path": "genres", "value": "Action" } }
-    //                     // ]
-
-    //                     // --- DEMO STEP 6: Compound Search ---
-    //                     // Uncomment the 'should' block below
-
-    //                     // , "should": [
-    //                     //     {
-    //                     //         "text": {
-    //                     //             "path": "fullplot",
-    //                     //             "query": query
-    //                     //             // --- DEMO STEP 8: Boost Search Scores ---
-    //                     //             // Uncomment each line below to boost movies matching this clause
-    //                     //             // , "score": { "boost": { "path": "imdb.rating", "undefined": 5 } }
-    //                     //             // , "score": { "boost": { "value": 5 } }
-    //                     //             // , "score": { "constant": { "value": 5 } }
-
-    //                     //             // --- DEMO STEP 12: Synonyms ---
-    //                     //             // Uncomment below to map words like 'car' to 'automobile'
-    //                     //             , "synonyms": "my_synonyms"
-    //                     //         }
-    //                     //     }
-    //                     // ]
-    //                     // Uncomment below to implement minimumShouldMatch
-    //                     //, "minimumShouldMatch": 1
-
-    //                 }
-
-    //                 // --- DEMO STEP 11: Highlighting (Search) ---
-    //                 // Uncomment below
-    //                 // , "highlight": { "path": "fullplot" }
-
-    //                 // --- DEMO STEP 9: Modify Sort Order ---
-    //                 // Uncomment below
-    //                // , "sort": { "year": -1 }
-    //             }
-    //         },
-    //         // --- DEMO STEP 7: Search Scores ---
-    //         // We can project the score using $meta.
-    //         {
-    //             $project: {
-    //                 title: 1, year: 1, cast: 1, fullplot: 1, poster: 1, genres: 1, imdb: 1, released: 1, runtime: 1, rated: 1
-    //                 // Uncomment below to add search score
-    //                 // , score: { $meta: "searchScore" }
-
-    //                 // --- DEMO STEP 11: Highlighting (Project) ---
-    //                 // Uncomment below
-    //                 // , highlights: { $meta: "searchHighlights" }
-    //             }
-    //         }
-    //     ]);
-    // uncomment till here
-
-         if (!cursor) 
-    {
-            return [];
+            results = await cursor.toArray();
+            if (results.length === 0) {
+                const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+                results = await moviesCollection.find({
+                    $or: [
+                        { title: regex },
+                        { cast: regex },
+                        { fullplot: regex }
+                    ]
+                }).limit(50).toArray();
+            }
+        } catch (searchError) {
+            // Fallback when Atlas Search index is missing/misconfigured
+            const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+            results = await moviesCollection.find({
+                $or: [
+                    { title: regex },
+                    { cast: regex },
+                    { fullplot: regex }
+                ]
+            }).limit(50).toArray();
+            console.warn('⚠ Atlas Search unavailable, using regex fallback:', searchError.message);
         }
 
-        const results = await cursor.toArray();
         console.log(`ℹ Full text search: "${query}" - Found ${results.length} results`);
         return results;
     } catch (error) {
@@ -202,26 +164,31 @@ async function fullTextSearch(query) {
  */
 async function autocompleteTitle(query) {
     try {
-       // --- DEMO STEP 10: Auto Complete ---
-        // Uncomment the code below to enable Autocomplete
+        let results;
 
-        // let cursor = moviesCollection.aggregate([
-        //     {
-        //         $search: {
-        //             "index": CONFIG.searchIndexName,
-        //             "autocomplete": { "query": query, "path": "title" }
-        //             //, "fuzzy": {}
-        //         }
-        //     },
-        //     { $project: { title: 1 } },
-        //     { $limit: 8 }
-        // ]);
-        // const results = await cursor.toArray();
+        try {
+            const cursor = moviesCollection.aggregate([
+                {
+                    $search: {
+                        index: CONFIG.searchIndexName,
+                        autocomplete: { query, path: 'title' }
+                    }
+                },
+                { $project: { title: 1 } },
+                { $limit: 8 }
+            ]);
 
-        // console.log(`ℹ Autocomplete search: "${query}" - Found ${results.length} results`);
-        // return results;
-        // Uncomment till here
-        return [];
+            results = await cursor.toArray();
+        } catch (searchError) {
+            // Fallback when Atlas Search index is missing/misconfigured
+            const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`^${escaped}`, 'i');
+            results = await moviesCollection.find({ title: regex }, { projection: { title: 1 } }).limit(8).toArray();
+            console.warn('⚠ Autocomplete Search unavailable, using regex fallback:', searchError.message);
+        }
+
+        console.log(`ℹ Autocomplete search: "${query}" - Found ${results.length} results`);
+        return results;
     } catch (error) {
         console.error('✗ Autocomplete search error:', error);
         throw error;
@@ -261,7 +228,7 @@ async function searchFacets(query) {
         //                     "genres": {
         //                         "type": "string",
         //                         "path": "genres",
-        //                         "numBuckets": 5
+        //                         "numBuckets": 10
         //                     },
         //                     "ratings": {
         //                         "type": "number",
